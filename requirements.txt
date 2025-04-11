@@ -1,5 +1,7 @@
-Flask==2.1.1
-Flask-Cors==3.1.1
-pandas==1.5.3
-numpy==1.24.1
-matplotlib==3.6.3
+Flask
+Flask-Cors
+pandas
+numpy
+matplotlib
+gunicorn
+
