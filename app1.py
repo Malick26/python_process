@@ -42,27 +42,59 @@ def load_file_with_pandas(file, ext):
 # Nettoyage de données
 def clean_data(df):
     try:
-        # Gestion des valeurs manquantes
-        for col in df.columns:
-            if pd.api.types.is_numeric_dtype(df[col]):
-                df[col] = df[col].fillna(df[col].median())
-            else:
-                df[col] = df[col].fillna("INCONNU")
+        print("🔍 Données avant nettoyage :")
+        print(df.head())
 
-        # Suppression des doublons
+        # 1️⃣ GESTION DES VALEURS MANQUANTES
+        df.fillna(method='ffill', inplace=True)  # Remplit avec la valeur précédente
+        df.fillna(method='bfill', inplace=True)  # Remplit avec la valeur suivante
+
+        # 2️⃣ SUPPRESSION DES DOUBLONS
         df.drop_duplicates(inplace=True)
 
-        # Traitement des outliers
+        # 3️⃣ TRAITEMENT DES VALEURS ABERRANTES (OUTLIERS) via IQR + clip
         numeric_cols = df.select_dtypes(include=['number']).columns
         for col in numeric_cols:
             q1, q3 = df[col].quantile([0.25, 0.75])
             iqr = q3 - q1
             lower, upper = q1 - 1.5 * iqr, q3 + 1.5 * iqr
-            df[col] = np.clip(df[col], lower, upper)
+            df[col] = np.clip(df[col], lower, upper)  # Tronque les valeurs extrêmes sans les supprimer
+
+        # 4️⃣ NORMALISATION DES NOMS DE COLONNES
+        df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+
+        print("✅ Données après nettoyage :")
+        print(df.head())
 
         return df
+
     except Exception as e:
-        raise ValueError(f"Erreur lors du nettoyage des données: {e}")
+        raise ValueError(f"❌ Erreur lors du nettoyage des données : {e}")
+def analyser_donnees(df):
+    resultats = {
+        "doublons": False,
+        "valeurs_aberrantes": False,
+        "valeurs_manquantes": False
+    }
+
+    # Vérification des valeurs manquantes
+    if df.isnull().values.any():
+        resultats["valeurs_manquantes"] = True
+
+    # Vérification des doublons
+    if df.duplicated().any():
+        resultats["doublons"] = True
+
+    # Vérification des valeurs aberrantes (outliers)
+    for col in df.select_dtypes(include=[np.number]).columns:
+        mean = df[col].mean()
+        std = df[col].std()
+        seuil_bas, seuil_haut = mean - 3 * std, mean + 3 * std
+        if ((df[col] < seuil_bas) | (df[col] > seuil_haut)).any():
+            resultats["valeurs_aberrantes"] = True
+            break
+
+    return resultats
 
 # Création du boxplot
 def create_boxplot(df):
@@ -75,7 +107,35 @@ def create_boxplot(df):
     img_base64 = base64.b64encode(img.getvalue()).decode('utf-8')
     plt.close(fig)
     return img_base64
+# Endpoint pour vérifier un fichier
+@app.route('/api/check', methods=['POST'])
+def check_file():
+    if 'file' not in request.files:
+        return jsonify({"error": "Aucun fichier reçu"}), 400
 
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "Nom de fichier vide"}), 400
+
+    try:
+        # Détection du format
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(file)
+        elif file.filename.endswith('.json'):
+            df = pd.read_json(file)
+        elif file.filename.endswith('.xml'):
+            content = file.read()
+        # Convertir le XML en JSON (ou dictionnaire Python)
+            df = pd.read_xml(io.BytesIO(content))
+        else:
+            return jsonify({"error": "Format de fichier non supporté"}), 400
+    except Exception as e:
+        return jsonify({"error": f"Erreur lors du traitement du fichier : {str(e)}"}), 400
+
+    # Analyse
+    resultats = analyser_donnees(df)
+
+    return jsonify(resultats)#  Endpoint pour traiter un fichier CSV
 # Route principale pour upload et nettoyage
 @app.route('/api/clean', methods=['POST'])
 def upload_and_clean():
