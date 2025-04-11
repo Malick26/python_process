@@ -3,3 +3,5 @@ Flask-Cors
 pandas
 numpy
 matplotlib
+gunicorn
+
