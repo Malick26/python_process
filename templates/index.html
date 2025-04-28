@@ -154,6 +154,32 @@
                                 </tbody>
                             </table>
                         `;
+                        
+                        if (data.descriptive_stats) {
+                            let statsTable = `
+                                <h4 class="mt-5"><i class="fas fa-table"></i> Statistiques Descriptives</h4>
+                                <div class="table-responsive">
+                                <table class="table table-striped mt-3">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Statistique</th>
+                                            ${Object.keys(data.descriptive_stats).map(col => `<th>${col}</th>`).join('')}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${Object.keys(data.descriptive_stats[Object.keys(data.descriptive_stats)[0]]).map(statName => `
+                                            <tr>
+                                                <td><strong>${statName}</strong></td>
+                                                ${Object.keys(data.descriptive_stats).map(col => `<td>${data.descriptive_stats[col][statName]}</td>`).join('')}
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                                </div>
+                            `;
+                            analysisResults.innerHTML = statsTable;
+                        }
+                        
 
                         // Afficher le boxplot
                         let boxplotImg = "data:image/png;base64," + data.boxplot_image;
@@ -177,6 +203,32 @@
 
                         let histImg = "data:image/png;base64," + data.hist;
                         histImage.src = histImg;
+
+                        if (data.descriptive_stats) {
+                            let statsTable = `
+                                <h4 class="mt-5"><i class="fas fa-table"></i> Statistiques Descriptives</h4>
+                                <div class="table-responsive">
+                                <table class="table table-striped mt-3">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Statistique</th>
+                                            ${Object.keys(data.descriptive_stats).map(col => `<th>${col}</th>`).join('')}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${Object.keys(data.descriptive_stats[Object.keys(data.descriptive_stats)[0]]).map(statName => `
+                                            <tr>
+                                                <td><strong>${statName}</strong></td>
+                                                ${Object.keys(data.descriptive_stats).map(col => `<td>${data.descriptive_stats[col][statName]}</td>`).join('')}
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                                </div>
+                            `;
+                            analysisResults.innerHTML = statsTable;
+                        }
+                        
     
                         messageElement.innerHTML = "<p class='text-success'><i class='fas fa-check-circle'></i> Fichier nettoyé téléchargé avec succès !</p>";
                     }

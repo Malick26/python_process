@@ -121,6 +121,24 @@ def create_boxplot(df):
     plt.close(fig)
     return img_base64
 # Endpoint pour vérifier un fichier
+
+# Calcul des statistiques descriptives
+def calculate_descriptive_stats(df):
+    # Sélectionner uniquement les colonnes numériques
+    numeric_df = df.select_dtypes(include=[np.number])
+    
+    # Calcul des statistiques descriptives pour les colonnes numériques
+    stats = numeric_df.describe().transpose()
+    
+    # Ajouter des statistiques supplémentaires
+    stats['range'] = stats['max'] - stats['min']  # Plage (différence max - min)
+    stats['variance'] = numeric_df.var()  # Variance
+    stats['skew'] = numeric_df.skew()  # Asymétrie
+    stats['kurtosis'] = numeric_df.kurt()  # Kurtosis (aplatissement)
+    
+    return stats
+
+
 @app.route('/api/check', methods=['POST'])
 def check_file():
     if 'file' not in request.files:
@@ -151,12 +169,15 @@ def check_file():
     boxplot_image_base64 = create_boxplot(df)  # Créer un boxplot avec les données originales
     
     hist = create_histogram(df)
+    
+    descriptive_stats = df.describe()
 
     # Retourner les résultats d'analyse avec le boxplot
     return jsonify({
         "resultats": resultats,
         "boxplot_image": boxplot_image_base64,  # Inclure l'image du boxplot
-        "hist": hist
+        "hist": hist,
+        "descriptive_stats": descriptive_stats.to_dict()
     })#  Endpoint pour traiter un fichier CSV
 # Route principale pour upload et nettoyage
 @app.route('/api/clean', methods=['POST'])
@@ -186,6 +207,8 @@ def upload_and_clean():
         boxplot_image_base64 = create_boxplot(cleaned_df)
         
         hist = create_histogram(df)
+        
+        descriptive_stats= df.describe()
 
         # Conversion du DataFrame nettoyé en CSV (en base64)
         output = io.BytesIO()
@@ -195,7 +218,8 @@ def upload_and_clean():
         return jsonify({
             "csv": base64.b64encode(output.getvalue()).decode('utf-8'),
             "boxplot_image": boxplot_image_base64,
-            "hist": hist
+            "hist": hist,
+            "descriptive_stats": descriptive_stats.to_dict()
         })
 
     except Exception as e:
