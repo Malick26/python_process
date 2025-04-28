@@ -62,6 +62,7 @@ def clean_data(df):
 
         # 4️⃣ NORMALISATION DES NOMS DE COLONNES
         df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+        
 
         print("✅ Données après nettoyage :")
         print(df.head())
@@ -70,6 +71,18 @@ def clean_data(df):
 
     except Exception as e:
         raise ValueError(f"❌ Erreur lors du nettoyage des données : {e}")
+
+def create_histogram(df):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    df.select_dtypes(include=[np.number]).hist(ax=ax, bins=20, grid=False)
+    
+    img = BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    img_base64 = base64.b64encode(img.getvalue()).decode('utf-8')
+    plt.close(fig)
+    return img_base64
+
 def analyser_donnees(df):
     resultats = {
         "doublons": False,
@@ -135,7 +148,16 @@ def check_file():
     # Analyse
     resultats = analyser_donnees(df)
 
-    return jsonify(resultats)#  Endpoint pour traiter un fichier CSV
+    boxplot_image_base64 = create_boxplot(df)  # Créer un boxplot avec les données originales
+    
+    hist = create_histogram(df)
+
+    # Retourner les résultats d'analyse avec le boxplot
+    return jsonify({
+        "resultats": resultats,
+        "boxplot_image": boxplot_image_base64,  # Inclure l'image du boxplot
+        "hist": hist
+    })#  Endpoint pour traiter un fichier CSV
 # Route principale pour upload et nettoyage
 @app.route('/api/clean', methods=['POST'])
 def upload_and_clean():
@@ -162,6 +184,8 @@ def upload_and_clean():
 
         # Création du boxplot
         boxplot_image_base64 = create_boxplot(cleaned_df)
+        
+        hist = create_histogram(df)
 
         # Conversion du DataFrame nettoyé en CSV (en base64)
         output = io.BytesIO()
@@ -170,7 +194,8 @@ def upload_and_clean():
 
         return jsonify({
             "csv": base64.b64encode(output.getvalue()).decode('utf-8'),
-            "boxplot_image": boxplot_image_base64
+            "boxplot_image": boxplot_image_base64,
+            "hist": hist
         })
 
     except Exception as e:

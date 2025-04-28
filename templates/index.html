@@ -72,7 +72,6 @@
             </div>
         </form>
         
-
         <!-- Afficher le message de succès ou d'erreur -->
         <div class="mt-4 text-center" id="message"></div>
 
@@ -83,6 +82,16 @@
                 <img id="boxplotImage" style="max-width: 100%; height: auto;" />
             </div>
         </div>
+
+        <div class="mt-5">
+            <h4 class="text-center"><i class="fas fa-chart-box"></i> Visualisation du Histogramme</h4>
+            <div class="text-center mt-3">
+                <img id="histImage" style="max-width: 100%; height: auto;" />
+            </div>
+        </div>
+
+        <!-- Afficher les résultats d'analyse -->
+        <div id="analysisResults" class="mt-5"></div>
     </div>
 
     <script>
@@ -92,6 +101,7 @@
             let action = event.submitter.dataset.action;
             let messageElement = document.getElementById('message');
             let boxplotImage = document.getElementById("boxplotImage");
+            let analysisResults = document.getElementById("analysisResults");
     
             if (!fileInput.files.length) {
                 messageElement.innerHTML = "<p class='text-danger'><i class='fas fa-exclamation-circle'></i> Veuillez sélectionner un fichier.</p>";
@@ -104,7 +114,8 @@
             document.getElementById('loadingSpinner').style.display = 'block';
             messageElement.innerHTML = "";
             boxplotImage.src = "";
-    
+            analysisResults.innerHTML = "";
+
             try {
                 let endpoint = action === "check" ? "api/check" : "api/clean";
                 let response = await fetch(endpoint, {
@@ -130,19 +141,26 @@
                                 <tbody>
                                     <tr>
                                         <td>Valeurs manquantes</td>
-                                        <td>${data.valeurs_manquantes ? "✅ Oui" : "❌ Non"}</td>
+                                        <td>${data.resultats.valeurs_manquantes ? "✅ Oui" : "❌ Non"}</td>
                                     </tr>
                                     <tr>
                                         <td>Doublons</td>
-                                        <td>${data.doublons ? "✅ Oui" : "❌ Non"}</td>
+                                        <td>${data.resultats.doublons ? "✅ Oui" : "❌ Non"}</td>
                                     </tr>
                                     <tr>
                                         <td>Valeurs aberrantes</td>
-                                        <td>${data.valeurs_aberrantes ? "✅ Oui" : "❌ Non"}</td>
+                                        <td>${data.resultats.valeurs_aberrantes ? "✅ Oui" : "❌ Non"}</td>
                                     </tr>
                                 </tbody>
                             </table>
                         `;
+
+                        // Afficher le boxplot
+                        let boxplotImg = "data:image/png;base64," + data.boxplot_image;
+                        boxplotImage.src = boxplotImg;
+
+                        let histImg = "data:image/png;base64," + data.hist;
+                        histImage.src = histImg;
                     } else {
                         // Téléchargement du CSV et affichage boxplot
                         let csvData = data.csv;
@@ -156,6 +174,9 @@
     
                         let boxplotImg = "data:image/png;base64," + data.boxplot_image;
                         boxplotImage.src = boxplotImg;
+
+                        let histImg = "data:image/png;base64," + data.hist;
+                        histImage.src = histImg;
     
                         messageElement.innerHTML = "<p class='text-success'><i class='fas fa-check-circle'></i> Fichier nettoyé téléchargé avec succès !</p>";
                     }
@@ -169,6 +190,5 @@
             }
         });
     </script>
-    
 </body>
 </html>
